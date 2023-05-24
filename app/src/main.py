@@ -16,19 +16,17 @@ if __name__ == '__main__':
         stores_obj.append({"number": store_aux[0], "x": int(store_aux[1]), "y": int(store_aux[2]), "destination_stores": store_aux[3:] if len(store_aux) > 2 else []})
 
     
-    route = []
-    route.append(stores_obj[0])
-    route.append(list(filter(lambda store: len(store.get("destination_stores")) > 0, stores_obj))[0])
+    origin_store = stores_obj[0]
+    route = [].append(stores_obj.filter(lambda store: store.get("destination_stores") > 0)[0])
     print(route)
     for i in range(1, len(stores_obj)):
         for j in range(1, len(stores_obj)):
             if i != j:
-                pass
                 
 
     # Calculate the distance between two points 
     def two_points_distance(xA, xB, yA, yB):
-        return (xB - xA) ** 2 + (yB - yA) ** 2
+        return math.sqrt((xB - xA) ** 2 + (yB - yA) ** 2)
 
     #calcula o consumo de combustivel 
     def calcula_gasto_combustivel (distancia, num_produtos):
@@ -51,5 +49,7 @@ if __name__ == '__main__':
         for loja in matriz:
             if loja not in rota:
                 distancia_total = two_points_distance(loja_atual[0],loja_atual[1], loja[0], loja[1])
-
+                if distancia < distancia_minima:
+                    distancia_minima = distancia
+                    proxima_loja = loja
 
