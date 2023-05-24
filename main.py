@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     # Calculate the distance between two points 
     def two_points_distance(xA, xB, yA, yB):
-        return (xB - xA) ** 2 + (yB - yA) ** 2
+        return math.sqrt((xB - xA) ** 2 + (yB - yA) ** 2)
 
     #calcula o consumo de combustivel 
     def calcula_gasto_combustivel (distancia, num_produtos):
@@ -49,5 +49,7 @@ if __name__ == '__main__':
         for loja in matriz:
             if loja not in rota:
                 distancia_total = two_points_distance(loja_atual[0],loja_atual[1], loja[0], loja[1])
-
+                if distancia < distancia_minima:
+                    distancia_minima = distancia
+                    proxima_loja = loja
 
