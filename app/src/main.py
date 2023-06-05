@@ -25,31 +25,83 @@ if __name__ == '__main__':
                 
 
     # Calculate the distance between two points 
-    def two_points_distance(xA, xB, yA, yB):
-        return math.sqrt((xB - xA) ** 2 + (yB - yA) ** 2)
+def two_points_distance(x1, y1, x2, y2):
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
     #calcula o consumo de combustivel 
-    def calcula_gasto_combustivel (distancia, num_produtos):
-        rendimento = 10 - (num_produtos * 0.5 )
-        return distancia / rendimento
+def calcular_gasto_combustivel(distancia, num_produtos):
+    rendimento = 10 - (num_produtos * 0.5)
+    return distancia / rendimento
 
-    #rota do caminhão
-     def rota_caminhao (matriz, carga_caminhao):
-        rota = []
-        distancia_total = 0
-        carga = 0 
 
-        loja_atual = matriz[0]
-        rota.append(loja_atual)
+def encontrar_proxima_loja(loja_atual, lojas, rota):
+    distancia_minima = math.inf
+    proxima_loja = None 
+
+    for loja in lojas:
+        if loja not in rota:
+            distancia = two_points_distance(loja_atual["x"], loja_atual["y"], loja["x"], loja["y"])
+            if distancia < distancia_minima:
+                distancia_minima = distancia
+                proxima_loja = loja
+
+    return proxima_loja, distancia_minima
+
+def calcular_rota_caminhao(lojas, carga_caminhao):
+    rota = []
+    distancia_total = 0
+    carga = 0 
+
+    loja_atual = lojas[0]
+    rota.append(loja_atual)
         
     while True:
-    distancia_minima = math.inf
-    proxima_loja = None
+        proxima_loja, distancia = encontrar_proxima_loja(loja_atual, lojas, rota)
 
-        for loja in matriz:
-            if loja not in rota:
-                distancia_total = two_points_distance(loja_atual[0],loja_atual[1], loja[0], loja[1])
-                if distancia < distancia_minima:
-                    distancia_minima = distancia
-                    proxima_loja = loja
+        if proxima_loja is None:
+            # Todas as lojas foram visitadas, retornar à matriz
+            distancia_total += two_points_distance(loja_atual["x"], loja_atual["y"], lojas[0]["x"], lojas[0]["y"])
+            rota.append(lojas[0])
+            break
+        
+        distancia_total += distancia
+        carga += len(loja_atual["destination_stores"])
 
+        if carga >= carga_caminhao:
+            distancia_total += two_points_distance(loja_atual["x"], loja_atual["y"], lojas[0]["x"], lojas[0]["y"])
+            rota.append(lojas[0])
+            carga = 0
+
+        rota.append(proxima_loja)
+        loja_atual = proxima_loja
+
+    return rota, distancia_total
+
+# Ler informações das lojas do arquivo
+lojas = []
+with open("lojas.txt", "r") as file:
+    for line in file:
+        store_info = line.split()
+        loja = {
+            "number": int(store_info[0]),
+            "x": int(store_info[1]),
+            "y": int(store_info[2]),
+            "destination_stores": [int(dest) for dest in store_info[3:]]
+        }
+        lojas.append(loja)
+
+# Parâmetros do caminhão
+carga_caminhao = 5
+
+# Calcular rota do caminhão
+rota, distancia_total = calcular_rota_caminhao(lojas, carga_caminhao)
+
+# Calcular gasto de combustível
+gasto_combustivel = calcular_gasto_combustivel(distancia_total, carga_caminhao)
+
+# Imprimir resultados
+print("Rota do caminhão:")
+for loja in rota:
+    print(loja["number"], loja["x"], loja["y"])
+
+print("Distância total percorrida:", distancia_total)
