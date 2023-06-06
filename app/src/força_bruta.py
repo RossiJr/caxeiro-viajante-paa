@@ -2,19 +2,17 @@ import math
 import itertools
 
 
-
-def calcular_distancia(x1, y1, x2, y2):
+# Calculate the distance between two points
+def calculate_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-    # calcula o consumo de combustivel
-
-
-def calcular_gasto_combustivel(distancia, num_produtos):
+# Calculate the fuel consumption for a given distance and number of products
+def calculate_fuel_consumption(distancia, num_produtos):
     rendimento = 10 - (num_produtos * 0.5)
     return distancia / rendimento
 
-
-def calcular_rota_caminhao(lojas, carga_caminhao):
+# Calculate the truck's route
+def calculate_route(lojas, carga_caminhao):
     rota = []
     gastoTotal = 0
     carga = 0
@@ -26,10 +24,9 @@ def calcular_rota_caminhao(lojas, carga_caminhao):
     rota.append(loja_atual)
 
     for loja in lojas[1:]:
-        distancia = calcular_distancia(loja_atual['x'], loja_atual['y'], loja['x'], loja['y'])
-        gasto_combustivel = calcular_gasto_combustivel(distancia, carga)
+        distancia = calculate_distance(loja_atual['x'], loja_atual['y'], loja['x'], loja['y'])
+        gasto_combustivel = calculate_fuel_consumption(distancia, carga)
 
-        print(destinos)
         if loja['number'] in destinos:
             # Remover loja da lista de destinos
             destinos.remove(loja['number'])
@@ -41,7 +38,7 @@ def calcular_rota_caminhao(lojas, carga_caminhao):
 
         # A carga do caminhão excedeu a capacidade, retornar ao ponto de partida
         if carga >= carga_caminhao:
-            print('carga excedeu')
+            break
         
         # Adiciona a próxima loja à rota
         rota.append(loja)
@@ -49,7 +46,6 @@ def calcular_rota_caminhao(lojas, carga_caminhao):
         loja_atual = loja
 
     return rota, gastoTotal, carga
-
 
 # Ler informações das lojas do arquivo
 lojas = []
@@ -77,15 +73,14 @@ melhor_gasto_combustivel = math.inf
 # Calcular rota e gasto de combustível para cada permutação
 for permutacao in permutacoes:
     destinos_permutados = [lojas[0]] + list(permutacao)
-    rota, gasto_total, carga = calcular_rota_caminhao(destinos_permutados, carga_caminhao)
+    rota, gasto_total, carga = calculate_route(destinos_permutados, carga_caminhao)
 
     if carga == 0 and gasto_total < melhor_gasto_combustivel:
         melhor_rota = rota
         melhor_gasto_combustivel = gasto_total
-    print(f"{permutacao}  -  {carga}")
 # Imprimir resultados
 print("Rota do caminhão:")
 for loja in melhor_rota:
-    print(loja["number"], loja["x"], loja["y"], carga)
+    print(loja["number"], loja["x"], loja["y"])
 
 print("Melhor gasto de combustível:", gasto_total)
