@@ -1,4 +1,5 @@
 import math
+import itertools
 
 if __name__ == '__main__':
     stores = []
@@ -19,23 +20,21 @@ if __name__ == '__main__':
     origin_store = stores_obj[0]
     route = [].append(stores_obj.filter(lambda store: store.get("destination_stores") > 0)[0])
     print(route)
-    for i in range(1, len(stores_obj)):
-        for j in range(1, len(stores_obj)):
-            if i != j:
-                pass
+for i in range(1, len(stores_obj)):
+    for j in range(1, len(stores_obj)):
+        if i != j:
+            pass
 
-    # Calculate the distance between two points 
 def calcular_distancia(x1, y1, x2, y2):
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-    #calcula o consumo de combustivel 
 def calcular_gasto_combustivel(distancia, num_produtos):
     rendimento = 10 - (num_produtos * 0.5)
     return distancia / rendimento
 
 def encontrar_proxima_loja(loja_atual, lojas, rota):
     distancia_minima = math.inf
-    proxima_loja = None 
+    proxima_loja = None
 
     for loja in lojas:
         if loja not in rota:
@@ -49,11 +48,11 @@ def encontrar_proxima_loja(loja_atual, lojas, rota):
 def calcular_rota_caminhao(lojas, carga_caminhao):
     rota = []
     distancia_total = 0
-    carga = 0 
+    carga = 0
 
     loja_atual = lojas[0]
     rota.append(loja_atual)
-        
+
     while True:
         proxima_loja, distancia = encontrar_proxima_loja(loja_atual, lojas, rota)
 
@@ -62,7 +61,7 @@ def calcular_rota_caminhao(lojas, carga_caminhao):
             distancia_total += calcular_distancia(loja_atual["x"], loja_atual["y"], lojas[0]["x"], lojas[0]["y"])
             rota.append(lojas[0])
             break
-        
+
         distancia_total += distancia
         carga += len(loja_atual["destination_stores"])
 
@@ -92,15 +91,27 @@ with open("lojas.txt", "r") as file:
 # Parâmetros do caminhão
 carga_caminhao = 5
 
-# Calcular rota do caminhão
-rota, distancia_total = calcular_rota_caminhao(lojas, carga_caminhao)
+# Gerar todas as permutações dos destinos
+destinos = lojas[1:]  # Exclui a matriz
+permutacoes = list(itertools.permutations(destinos))
 
-# Calcular gasto de combustível
-gasto_combustivel = calcular_gasto_combustivel(distancia_total, carga_caminhao)
+melhor_rota = None
+melhor_gasto_combustivel = math.inf
+
+# Calcular rota e gasto de combustível para cada permutação
+for permutacao in permutacoes:
+    destinos_permutados = [lojas[0]] + list(permutacao) + [lojas[0]]
+    rota, distancia_total = calcular_rota_caminhao(destinos_permutados, carga_caminhao)
+    gasto_combustivel = calcular_gasto_combustivel(distancia_total, carga_caminhao)
+
+    if gasto_combustivel < melhor_gasto_combustivel:
+        melhor_rota = rota
+        melhor_gasto_combustivel = gasto_combustivel
 
 # Imprimir resultados
 print("Rota do caminhão:")
-for loja in rota:
+for loja in melhor_rota:
     print(loja["number"], loja["x"], loja["y"])
 
 print("Distância total percorrida:", distancia_total)
+print("Melhor gasto de combustível:", melhor_gasto_combustivel)
