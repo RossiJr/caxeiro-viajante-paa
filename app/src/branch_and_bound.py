@@ -10,6 +10,8 @@ CINZA = (168, 168, 168)
 
 pygame.init()
 
+tempo_inicial = (time.time()) # Start timer
+
 # Calculate the distance between two points
 def calculate_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
@@ -35,7 +37,7 @@ def calculate_lower_bound(lojas, carga_caminhao, visited):
 def calculate_route_bb(lojas, carga_caminhao):
     num_lojas = len(lojas)
     visited = [False] * num_lojas
-    rota_atual = [0]
+    rota_atual = []
     carga_atual = 0
     gasto_atual = 0
     melhor_rota = None
@@ -52,10 +54,11 @@ def calculate_route_bb(lojas, carga_caminhao):
             carga_atual -= len(lojas[index]["destination_stores"])
             return
 
-        rota_atual.append(index)
+        rota_atual.append({'index_loja': index, 'carga_atual': carga_atual})
 
         if len(rota_atual) == num_lojas:
-            distancia = calculate_distance(lojas[rota_atual[-1]]['x'], lojas[rota_atual[-1]]['y'], lojas[0]['x'], lojas[0]['y'])
+            distancia = calculate_distance(lojas[rota_atual[i-1]['index_loja']]['x'], lojas[rota_atual[i-1]['index_loja']]['y'],
+                                            lojas[rota_atual[i]['index_loja']]['x'], lojas[rota_atual[i]['index_loja']]['y'])
             gasto_combustivel = calculate_fuel_consumption(distancia, carga_atual)
 
             if gasto_combustivel < melhor_gasto_combustivel:
@@ -68,7 +71,7 @@ def calculate_route_bb(lojas, carga_caminhao):
             if gasto_atual + lower_bound < melhor_gasto_combustivel:
                 for i in range(1, num_lojas):
                     if not visited[i]:
-                        distancia = calculate_distance(lojas[rota_atual[-1]]['x'], lojas[rota_atual[-1]]['y'], lojas[i]['x'], lojas[i]['y'])
+                        distancia = calculate_distance(lojas[rota_atual[i-1]['index_loja']]['x'], lojas[rota_atual[i-1]['index_loja']]['y'], lojas[rota_atual[i]['index_loja']]['x'], lojas[rota_atual[i]['index_loja']]['y'])
                         gasto_combustivel = calculate_fuel_consumption(distancia, carga_atual)
 
                         if gasto_atual + gasto_combustivel + lower_bound < melhor_gasto_combustivel:
@@ -105,10 +108,14 @@ melhor_rota, melhor_gasto_combustivel = calculate_route_bb(lojas, carga_caminhao
 # Print results
 print("Rota do caminhão:")
 for ponto in melhor_rota:
-    rota = ponto['loja']
-    print(rota["number"], rota['x'], rota['y'], ponto['carga_atual'])
+    rota = ponto
+    print(rota["number"], rota['x'], rota['y'])
 
-print("Melhor gasto de combustível:", gasto_total)
+print("Melhor gasto de combustível:", melhor_gasto_combustivel)
+
+tempo_final = (time.time()) # End timer
+
+print(f"{tempo_final - tempo_inicial} segundos") # Print executing time
 
 ####### FRONT-END #######
 
@@ -140,20 +147,18 @@ while executing:
 
     # Draw ponits and route based on results
     for i, ponto in enumerate(melhor_rota):
-        ponto = ponto['loja']
-
         x = ponto['x'] * size
         y = ponto['y'] * size
         
-        if i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga_atual'] == melhor_rota[i]['carga_atual']:
+        if i < len(melhor_rota) - 1: # and melhor_rota[i-1]['carga_atual'] == melhor_rota[i]['carga_atual']:
             cor = VERDE
             pygame.draw.circle(tela, cor, (x, y), 10)
-        elif i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga_atual'] < melhor_rota[i]['carga_atual']:
-            cor = AZUL
-            pygame.draw.circle(tela, cor, (x, y), 10)
-        elif i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga_atual'] > melhor_rota[i]['carga_atual']:
-            cor = VERMELHO
-            pygame.draw.circle(tela, cor, (x, y), 10)
+        #elif i < len(melhor_rota) - 1# and melhor_rota[i-1]['carga_atual'] < melhor_rota[i]['carga_atual']:
+            #cor = AZUL
+            #pygame.draw.circle(tela, cor, (x, y), 10)
+        #elif i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga_atual'] > melhor_rota[i]['carga_atual']:
+            #cor = VERMELHO
+           # pygame.draw.circle(tela, cor, (x, y), 10)
 
         texto = f"Loja {ponto['number']}"  # Print store number/name
         fonte = pygame.font.Font(None, 18)
@@ -161,12 +166,12 @@ while executing:
         tela.blit(texto_renderizado, (x, y - 20))
 
         if initial_point > 0 :
-            pygame.draw.lines(tela, VERDE, False, [(ponto['loja']['x'] * size, ponto['loja']['y'] * size) for ponto in melhor_rota[:initial_point + 1]], 2) # Draw the lines
+            pygame.draw.lines(tela, VERDE, False, [(ponto['x'] * size, ponto['y'] * size) for ponto in melhor_rota[:initial_point + 1]], 2) # Draw the lines
 
 
     # Update truck position based on scale
-    x_caminhao = melhor_rota[initial_point]['loja']['x'] * size
-    y_caminhao = melhor_rota[initial_point]['loja']['y'] * size
+    x_caminhao = melhor_rota[initial_point]['x'] * size
+    y_caminhao = melhor_rota[initial_point]['y'] * size
 
     caminhao_rect = imagem_caminhao.get_rect(center=(x_caminhao, y_caminhao))
     tela.blit(imagem_caminhao, caminhao_rect) # Show truck

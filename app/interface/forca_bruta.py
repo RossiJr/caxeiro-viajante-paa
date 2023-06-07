@@ -2,6 +2,7 @@ import math
 import itertools
 import pygame
 import time
+import easygui
 
 BRANCO = (255, 255, 255)
 VERDE = (0, 255, 0)
@@ -10,6 +11,16 @@ VERMELHO = (255,0, 0)
 CINZA = (168, 168, 168)
 
 pygame.init()
+
+tempo_inicial = (time.time()) # Start timer
+
+valor_input = easygui.enterbox("Insira a carga máxima do caminhão:", title="Entrada")
+try:
+   carga_caminhao = int(valor_input) # Use input to define 'carga_caminhao'
+except ValueError:
+    easygui.msgbox("Valor inválido. O programa será encerrado.", title="Erro")
+    pygame.quit()
+    exit()
 
 # Calculate the distance between two points
 def calculate_distance(x1, y1, x2, y2):
@@ -69,8 +80,6 @@ with open("d:\\PAA\\trab2\\caxeiro2\\caxeiro-viajante-paa\\app\\src\\lojas.txt",
         }
         lojas.append(loja)
 
-# Truck parameters
-carga_caminhao = 5
 
 # Generate all permutations of destinations
 destinos = lojas[1:]  # Exclui a matriz
@@ -95,6 +104,10 @@ for ponto in melhor_rota:
     print(rota["number"], rota['x'], rota['y'], ponto['carga_atual'])
 
 print("Melhor gasto de combustível:", gasto_total)
+
+tempo_final = (time.time()) # End timer
+
+print(f"{tempo_final - tempo_inicial} segundos") # Print executing time
 
 ####### FRONT-END #######
 
@@ -168,5 +181,6 @@ while executing:
 
     pygame.display.flip()
     time.sleep(tempo_atraso)
+
 
 pygame.quit() # Close front-end
