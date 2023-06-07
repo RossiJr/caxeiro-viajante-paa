@@ -1,135 +1,182 @@
 import math
+import pygame
+import time
 
-if __name__ == '__main__':
-    stores = []
-    stores_obj = [] 
-    truck_products = []
-    
-    # Open and read file
-    with open("lojas.txt", "r") as file:
-        for line in file:
-            stores.append(line.replace("\n", ""))
-    
-    # Create a list of stores with their attributes
-    for store in stores:
-        store_aux = store.split(" ")
-        stores_obj.append({"number": store_aux[0], "x": int(store_aux[1]), "y": int(store_aux[2]), "destination_stores": store_aux[3:] if len(store_aux) > 2 else []})
+BRANCO = (255, 255, 255)
+VERDE = (0, 255, 0)
+AZUL = (0,127,255)
+VERMELHO = (255,0, 0)
+CINZA = (168, 168, 168)
 
-    
-    origin_store = stores_obj[0]
-    route = [].append(stores_obj.filter(lambda store: store.get("destination_stores") > 0)[0])
-    print(route)
-for i in range(1, len(stores_obj)):
-    for j in range(1, len(stores_obj)):
-        if i != j:
-            pass
-        
-    # Calculate the distance between two points
-def calcular_distancia(x1, y1, x2, y2):
+pygame.init()
+
+# Calculate the distance between two points
+def calculate_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-    # calcula o consumo de combustivel
-def calcular_gasto_combustivel(distancia, num_produtos):
+# Calculate the fuel consumption for a given distance and number of products
+def calculate_fuel_consumption(distancia, num_produtos):
     rendimento = 10 - (num_produtos * 0.5)
     return distancia / rendimento
 
+# Calculate the lower bound cost for the remaining unvisited stores
+def calculate_lower_bound(lojas, carga_caminhao, visited):
+    # Calcula a carga restante no caminhão subtraindo a soma dos itens na lista "visited" da capacidade do caminhão
+    carga_restante = carga_caminhao - sum(visited)
+    lower_bound = 0       # Amazenara o valor do limite inferior do consumo de combustivel
 
-def encontrar_proxima_loja(loja_atual, lojas, rota):
-    distancia_minima = math.inf
-    proxima_loja = None
+    for i, loja in enumerate(lojas):
+        if not visited[i]:
+            distancia = calculate_distance(lojas[0]['x'], lojas[0]['y'],loja['x'], loja['y']) 
+            lower_bound += calculate_fuel_consumption(distancia, carga_restante)  # Se a loja atual não tiver sido visitada, o consumo de combustível é calculado chamando a função calculate_fuel_consumption.
+    return lower_bound  # Limite inferior do consumo de combustivel 
 
-    # Iterar sobre todas as lojas para calcular a rota do caminhão
-    for loja in lojas:
-        # Verificar se a loja atual não está presente na rota percorrida
-        if loja not in rota:
-            # Verificar se a distância calculada é menor que a distância mínima encontrada até agora
-            distancia = calcular_distancia(
-                loja_atual["x"], loja_atual["y"], loja["x"], loja["y"]
-            )
-            if distancia < distancia_minima:
-                distancia_minima = distancia
-                proxima_loja = loja
+# Calculate the truck's route using Branch and Bound
+def calculate_route_bb(lojas, carga_caminhao):
+    num_lojas = len(lojas)
+    visited = [False] * num_lojas
+    rota_atual = [0]
+    carga_atual = 0
+    gasto_atual = 0
+    melhor_rota = None
+    melhor_gasto_combustivel = math.inf
 
-    return proxima_loja, distancia_minima
+    def branch_and_bound(index):
+        nonlocal rota_atual, carga_atual, gasto_atual, melhor_rota, melhor_gasto_combustivel
 
-def calcular_rota_caminhao(lojas, carga_caminhao, distancia_atual, rota_atual, melhor_distancia, melhor_rota):
-    # Obter a loja atual e a carga atual com base na rota atual
-    loja_atual = rota_atual[-1]
-    carga_atual = sum(len(loja["destination_stores"]) for loja in rota_atual)
+        visited[index] = True
+        carga_atual += len(lojas[index]["destination_stores"])
 
-    # Verificar se a carga atual excede a capacidade do caminhão
-    if carga_atual >= carga_caminhao:
-        # Adicionar a distância de retorno ao ponto de partida à distância atual
-        distancia_atual += calcular_distancia(loja_atual["x"], loja_atual["y"], lojas[0]["x"], lojas[0]["y"])
-        # Adicionar a loja inicial à rota atual
-        rota_atual.append(lojas[0])
+        if carga_atual > carga_caminhao:
+            visited[index] = False
+            carga_atual -= len(lojas[index]["destination_stores"])
+            return
 
-        # Verificar se a distância atual é menor que a melhor distância encontrada até agora
-        if distancia_atual < melhor_distancia:
-            melhor_distancia = distancia_atual
-            melhor_rota = rota_atual.copy()
+        rota_atual.append(index)
 
-        # Retornar a melhor distância e a melhor rota
-        return melhor_distancia, melhor_rota
+        if len(rota_atual) == num_lojas:
+            distancia = calculate_distance(lojas[rota_atual[-1]]['x'], lojas[rota_atual[-1]]['y'], lojas[0]['x'], lojas[0]['y'])
+            gasto_combustivel = calculate_fuel_consumption(distancia, carga_atual)
 
-    # Iterar sobre todas as lojas para encontrar a próxima loja a ser visitada
-    for loja in lojas:
-        if loja not in rota_atual:
-            # Criar uma nova rota com a loja atual
-            nova_rota = rota_atual.copy()
-            nova_rota.append(loja)
-            # Calcular a nova distância considerando a loja atual
-            nova_distancia = distancia_atual + calcular_distancia(loja_atual["x"], loja_atual["y"], loja["x"], loja["y"])
+            if gasto_combustivel < melhor_gasto_combustivel:
+                melhor_rota = rota_atual[:]
+                melhor_gasto_combustivel = gasto_combustivel
 
-            # Verificar se a nova distância é menor que a melhor distância encontrada até agora
-            if nova_distancia < melhor_distancia:
-                # Chamada recursiva da função para continuar construindo a rota
-                nova_melhor_distancia, nova_melhor_rota = calcular_rota_caminhao(
-                    lojas, carga_caminhao, nova_distancia, nova_rota, melhor_distancia, melhor_rota
-                )
+        else:
+            lower_bound = calculate_lower_bound(lojas, carga_caminhao, visited)
 
-                # Verificar se a nova melhor distância é menor que a melhor distância encontrada até agora
-                if nova_melhor_distancia < melhor_distancia:
-                    melhor_distancia = nova_melhor_distancia
-                    melhor_rota = nova_melhor_rota
+            if gasto_atual + lower_bound < melhor_gasto_combustivel:
+                for i in range(1, num_lojas):
+                    if not visited[i]:
+                        distancia = calculate_distance(lojas[rota_atual[-1]]['x'], lojas[rota_atual[-1]]['y'], lojas[i]['x'], lojas[i]['y'])
+                        gasto_combustivel = calculate_fuel_consumption(distancia, carga_atual)
 
-    return melhor_distancia, melhor_rota
+                        if gasto_atual + gasto_combustivel + lower_bound < melhor_gasto_combustivel:
+                            branch_and_bound(i)
 
+        visited[index] = False
+        carga_atual -= len(lojas[index]["destination_stores"])
+        rota_atual.pop()
 
-# Ler informações das lojas do arquivo
+    branch_and_bound(0)
+    rota = [lojas[i] for i in melhor_rota]
+
+    return rota, melhor_gasto_combustivel
+
+# Read store infos from file
 lojas = []
-with open("lojas.txt", "r") as file:
+with open("d:\\PAA\\trab2\\caxeiro2\\caxeiro-viajante-paa\\app\\src\\lojas.txt", "r") as file:
     for line in file:
         store_info = line.split()
         loja = {
             "number": int(store_info[0]),
             "x": int(store_info[1]),
             "y": int(store_info[2]),
-            "destination_stores": [int(dest) for dest in store_info[3:]]
+            "destination_stores": [int(dest) for dest in store_info[3:]],
         }
         lojas.append(loja)
 
-# Parâmetros do caminhão
+# Truck parameters
 carga_caminhao = 5
 
-# Inicialização das variáveis
-distancia_inicial = 0
-rota_inicial = [lojas[0]]
-melhor_distancia = math.inf
-melhor_rota = []
+# Calculate route and fuel cost using Branch and Bound
+melhor_rota, melhor_gasto_combustivel = calculate_route_bb(lojas, carga_caminhao)
 
-# Calcular rota do caminhão utilizando branch-and-bound
-melhor_distancia, melhor_rota = calcular_rota_caminhao(
-    lojas, carga_caminhao, distancia_inicial, rota_inicial, melhor_distancia, melhor_rota
-)
-
-# Calcular gasto de combustível
-gasto_combustivel = calcular_gasto_combustivel(melhor_distancia, carga_caminhao)
-
-# Imprimir resultados
+# Print results
 print("Rota do caminhão:")
-for loja in melhor_rota:
-    print(loja["number"], loja["x"], loja["y"])
+for ponto in melhor_rota:
+    rota = ponto['loja']
+    print(rota["number"], rota['x'], rota['y'], ponto['carga_atual'])
 
-print("Distância total percorrida:", melhor_distancia)
-print("Gasto de combustível:", gasto_combustivel)
+print("Melhor gasto de combustível:", gasto_total)
+
+####### FRONT-END #######
+
+# Screen configurations
+largura, altura = 800, 800   
+tela = pygame.display.set_mode((largura, altura))
+pygame.display.set_caption("Branch and Bound")
+
+# Load truck image
+imagem_caminhao = pygame.image.load("d:\\PAA\\trab2\\caxeiro2\\caxeiro-viajante-paa\\app\\src\\caminhao.png")
+largura_caminhao = int(5 * tela.get_width() / 100)
+altura_caminhao = int(5 * tela.get_height() / 100)
+imagem_caminhao = pygame.transform.scale(imagem_caminhao, (largura_caminhao, altura_caminhao))
+
+#Add delay for the route
+tempo_atraso = 0.8
+
+#Main loop
+executing = True
+initial_point = 0
+while executing:
+    for evento in pygame.event.get(): # Start front-end
+        if evento.type == pygame.QUIT:
+            executing = False
+
+    tela.fill(BRANCO) # Set background color
+
+    size = 1.8 # Chance scale
+
+    # Draw ponits and route based on results
+    for i, ponto in enumerate(melhor_rota):
+        ponto = ponto['loja']
+
+        x = ponto['x'] * size
+        y = ponto['y'] * size
+        
+        if i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga_atual'] == melhor_rota[i]['carga_atual']:
+            cor = VERDE
+            pygame.draw.circle(tela, cor, (x, y), 10)
+        elif i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga_atual'] < melhor_rota[i]['carga_atual']:
+            cor = AZUL
+            pygame.draw.circle(tela, cor, (x, y), 10)
+        elif i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga_atual'] > melhor_rota[i]['carga_atual']:
+            cor = VERMELHO
+            pygame.draw.circle(tela, cor, (x, y), 10)
+
+        texto = f"Loja {ponto['number']}"  # Print store number/name
+        fonte = pygame.font.Font(None, 18)
+        texto_renderizado = fonte.render(texto, True, (0, 0, 0))
+        tela.blit(texto_renderizado, (x, y - 20))
+
+        if initial_point > 0 :
+            pygame.draw.lines(tela, VERDE, False, [(ponto['loja']['x'] * size, ponto['loja']['y'] * size) for ponto in melhor_rota[:initial_point + 1]], 2) # Draw the lines
+
+
+    # Update truck position based on scale
+    x_caminhao = melhor_rota[initial_point]['loja']['x'] * size
+    y_caminhao = melhor_rota[initial_point]['loja']['y'] * size
+
+    caminhao_rect = imagem_caminhao.get_rect(center=(x_caminhao, y_caminhao))
+    tela.blit(imagem_caminhao, caminhao_rect) # Show truck
+
+    # Update initial point 
+    initial_point += 1
+    if initial_point >= len(melhor_rota):
+        initial_point = 0
+
+    pygame.display.flip()
+    time.sleep(tempo_atraso)
+
+pygame.quit() # Close front-end
