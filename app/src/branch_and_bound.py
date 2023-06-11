@@ -4,13 +4,14 @@ import time
 
 BRANCO = (255, 255, 255)
 VERDE = (0, 255, 0)
-AZUL = (0,127,255)
-VERMELHO = (255,0, 0)
+AZUL = (0, 127, 255)
+VERMELHO = (255, 0, 0)
 CINZA = (168, 168, 168)
 
 pygame.init()
 
-tempo_inicial = (time.time()) # Start timer
+tempo_inicial = time.time()  # Start timer
+
 
 # Map if i is in the destination stores of lojas and i is in the carga_restantes
 def is_in_destination_stores(lojas, i, carga_restantes):
@@ -27,21 +28,30 @@ def is_in_destination_stores(lojas, i, carga_restantes):
 def calculate_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
+
 # Calculate the fuel consumption for a given distance and number of products
 def calculate_fuel_consumption(distancia, num_produtos):
     rendimento = 10 - (num_produtos * 0.5)
     return distancia / rendimento
 
-# Calculate the lower bound cost for the remaining unvisited stores
-def calculate_lower_bound(lojas, visited):
-    return 0
-    lower_bound = 0       # Amazenara o valor do limite inferior do consumo de combustivel
 
-    for i, loja in enumerate(lojas):
-        if not visited[i]:
-            distancia = calculate_distance(lojas[0]['x'], lojas[0]['y'],loja['x'], loja['y']) 
-            lower_bound += calculate_fuel_consumption(distancia, 0)  # Se a loja atual não tiver sido visitada, o consumo de combustível é calculado chamando a função calculate_fuel_consumption.
-    return lower_bound  # Limite inferior do consumo de combustivel 
+# Calculate the lower bound cost for the remaining unvisited stores
+def calculate_lower_bound(lojas, carga_atual, cargas_restantes):
+    lower_bound = 0
+    for loja in cargas_restantes:
+        gasto = calculate_fuel_consumption(calculate_distance(lojas[loja]['x'], lojas[loja]['y'], lojas[0]['x'], lojas[0]['y']),carga_atual)
+        #if gasto < lower_bound:
+            #lower_bound = gasto
+        lower_bound += gasto
+    return lower_bound
+    for loja in cargas_restantes:
+        distancia = calculate_distance(lojas[loja]["x"],lojas[loja]["y"],lojas[0]["x"],lojas[0]["y"])
+        gasto_combustivel = calculate_fuel_consumption(
+            distancia, carga_atual
+        )
+        lower_bound += gasto_combustivel
+    return lower_bound
+
 
 # Calculate the truck's route using Branch and Bound
 def calculate_route_bb(lojas, carga_caminhao):
@@ -56,53 +66,68 @@ def calculate_route_bb(lojas, carga_caminhao):
 
         visited[index] = True
 
-        
         # Se a carga atual for maior que a do caminhao
         if carga_atual > carga_caminhao:
             visited[index] = False
             carga_atual -= len(lojas[index]["destination_stores"])
             return
 
-        
-
         if len(rota_atual) == num_lojas:
-            if gasto_atual < melhor_gasto_combustivel:
+            if gasto_atual < melhor_gasto_combustivel and len(cargas_restantes) == 0:
                 melhor_rota = rota_atual[:]
                 melhor_gasto_combustivel = gasto_atual
         else:
-            lower_bound = calculate_lower_bound(lojas, visited)
+            lower_bound = calculate_lower_bound(lojas, carga_atual, cargas_restantes)
 
-            if gasto_atual + lower_bound < melhor_gasto_combustivel:
+            if lower_bound < melhor_gasto_combustivel:
+                # Ordenar as lojas não visitadas com base na carga de destino
+                lojas_nao_visitadas = []
                 for i in range(1, num_lojas):
-                    # Se a loja atual não tiver sido visitada, o consumo de combustível é calculado chamando a função calculate_fuel_consumption.
                     if not visited[i] and is_in_destination_stores(lojas, i, cargas_restantes):
-                        carga_atual += len(lojas[i]["destination_stores"])
-                        entregue = False
-                        if i in cargas_restantes:
-                            entregue = True
-                            cargas_restantes.remove(i)
-                            carga_atual -= 1
-                        rota_atual.append({'index_loja': i, 'carga_atual': carga_atual})
-                        distancia = calculate_distance(lojas[rota_atual[-1]['index_loja']]['x'], lojas[rota_atual[-1]['index_loja']]['y'], lojas[i]['x'], lojas[i]['y'])
-                        gasto_combustivel = calculate_fuel_consumption(distancia, carga_atual)
-                        for j in lojas[i]["destination_stores"]:
-                            cargas_restantes.append(j)
-                        
+                        lojas_nao_visitadas.append(lojas[i])
+                #lojas_nao_visitadas.sort(key=lambda x: len(x["destination_stores"]), reverse=True)
 
-                        
+                for loja in lojas_nao_visitadas:
+                    removed = False
+                    nova_distancia = calculate_distance(
+                        lojas[rota_atual[len(rota_atual)-1]["index_loja"]]["x"],
+                        lojas[rota_atual[len(rota_atual)-1]["index_loja"]]["y"],
+                        loja["x"],
+                        loja["y"],
+                    )
+                    nova_gasto_combustivel = (
+                        gasto_atual
+                        + calculate_fuel_consumption(
+                            nova_distancia, carga_atual
+                        )
+                    )
+                    carga_atual += len(loja["destination_stores"])
+                    cargas_restantes += loja["destination_stores"]
+                    if loja["number"] in cargas_restantes:
+                        cargas_restantes.remove(loja["number"])
+                        carga_atual -= 1
+                        removed = True
+                    
 
-                        if gasto_atual + gasto_combustivel + lower_bound < melhor_gasto_combustivel:
-                            branch_and_bound(i, rota_atual, gasto_atual + gasto_combustivel, carga_atual, cargas_restantes)
-                        
-                        rota_atual.pop()
-                        carga_atual -= len(lojas[i]["destination_stores"])
-                        if entregue:
-                            cargas_restantes.append(i)
-                            carga_atual += 1
-                        visited[i] = False
+                    branch_and_bound(loja["number"],
+                        rota_atual + [{"index_loja": loja["number"], "carga": carga_atual, "gasto": nova_gasto_combustivel}],
+                        nova_gasto_combustivel,
+                        carga_atual,
+                        cargas_restantes,
+                    )
 
-    
-    branch_and_bound(0, [{'index_loja': 0, 'carga_atual': 0}], 0, 0, [])
+                    carga_atual -= len(loja["destination_stores"])
+                    for i in loja["destination_stores"]:
+                        cargas_restantes.remove(i)
+                    if removed:
+                        carga_atual += 1
+                        cargas_restantes.append(loja["number"])
+
+
+        visited[index] = False
+        carga_atual -= len(lojas[index]["destination_stores"])
+
+    branch_and_bound(0, [{"index_loja": 0, "carga": 0, "gasto": 0}], 0, 0, [])
 
     return melhor_rota, melhor_gasto_combustivel
 
@@ -128,7 +153,7 @@ melhor_rota, melhor_gasto_combustivel = calculate_route_bb(lojas, carga_caminhao
 # Print results
 print("Rota do caminhão:")
 for ponto in melhor_rota:
-    rota = ponto
+    rota = lojas[ponto['index_loja']]
     print(rota["number"], rota['x'], rota['y'])
 
 print("Melhor gasto de combustível:", melhor_gasto_combustivel)
