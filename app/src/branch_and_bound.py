@@ -1,6 +1,7 @@
 import math
 import pygame
 import time
+import easygui
 
 # Colors
 BRANCO = (255, 255, 255)
@@ -10,6 +11,15 @@ VERMELHO = (255, 0, 0)
 CINZA = (168, 168, 168)
 
 pygame.init()
+
+
+valor_input = easygui.enterbox("Insira a carga máxima do caminhão:", title="Entrada")
+try:
+   carga_caminhao = int(valor_input) # Use input to define 'carga_caminhao'
+except ValueError:
+    easygui.msgbox("Valor inválido. O programa será encerrado.", title="Erro")
+    pygame.quit()
+    exit()
 
 tempo_inicial = time.time()  # Start timer
 
@@ -70,6 +80,10 @@ def calculate_route_bb(lojas, carga_caminhao):
 
         # If the actual route is complete, check if it is the best route
         if len(rota_atual) == num_lojas:
+            gasto_atual += calculate_fuel_consumption(calculate_distance(lojas[rota_atual[len(rota_atual)-1]["index_loja"]]["x"], 
+                                                                         lojas[rota_atual[len(rota_atual)-1]["index_loja"]]["y"], 
+                                                                         lojas[0]["x"], lojas[0]["y"]), carga_atual)
+            rota_atual.append({"index_loja": 0, "carga": carga_atual, "gasto": gasto_atual})
             if gasto_atual < melhor_gasto_combustivel and len(cargas_restantes) == 0:
                 melhor_rota = rota_atual[:]
                 melhor_gasto_combustivel = gasto_atual
@@ -88,7 +102,7 @@ def calculate_route_bb(lojas, carga_caminhao):
                 for loja in lojas_nao_visitadas:
                     removed = False
 
-                    # Visit the store and make the calculations and the recursive call
+                    # Visit the store making the calculations and then call the function recursively
                     nova_distancia = calculate_distance(
                         lojas[rota_atual[len(rota_atual)-1]["index_loja"]]["x"],
                         lojas[rota_atual[len(rota_atual)-1]["index_loja"]]["y"],
@@ -146,9 +160,6 @@ with open("d:\\PAA\\trab2\\caxeiro2\\caxeiro-viajante-paa\\app\\src\\lojas.txt",
         }
         lojas.append(loja)
 
-# Truck parameters
-carga_caminhao = 100000
-
 # Calculate route and fuel cost using Branch and Bound
 melhor_rota, melhor_gasto_combustivel = calculate_route_bb(lojas, carga_caminhao)
 
@@ -194,8 +205,8 @@ while executing:
 
     # Draw ponits and route based on results
     for i, ponto in enumerate(melhor_rota):
-        x = ponto['x'] * size
-        y = ponto['y'] * size
+        x = lojas[ponto["index_loja"]]['x'] * size
+        y = lojas[ponto["index_loja"]]['y'] * size
         
         if i < len(melhor_rota) - 1: # and melhor_rota[i-1]['carga_atual'] == melhor_rota[i]['carga_atual']:
             cor = VERDE
@@ -207,18 +218,18 @@ while executing:
             #cor = VERMELHO
            # pygame.draw.circle(tela, cor, (x, y), 10)
 
-        texto = f"Loja {ponto['number']}"  # Print store number/name
+        texto = f"Loja {ponto['index_loja']}"  # Print store number/name
         fonte = pygame.font.Font(None, 18)
         texto_renderizado = fonte.render(texto, True, (0, 0, 0))
         tela.blit(texto_renderizado, (x, y - 20))
 
         if initial_point > 0 :
-            pygame.draw.lines(tela, VERDE, False, [(ponto['x'] * size, ponto['y'] * size) for ponto in melhor_rota[:initial_point + 1]], 2) # Draw the lines
+            pygame.draw.lines(tela, VERDE, False, [(lojas[ponto["index_loja"]]['x'] * size, lojas[ponto["index_loja"]]['y'] * size) for ponto in melhor_rota[:initial_point + 1]], 2) # Draw the lines
 
 
     # Update truck position based on scale
-    x_caminhao = melhor_rota[initial_point]['x'] * size
-    y_caminhao = melhor_rota[initial_point]['y'] * size
+    x_caminhao = lojas[melhor_rota[initial_point]["index_loja"]]['x'] * size
+    y_caminhao = lojas[melhor_rota[initial_point]["index_loja"]]['y'] * size
 
     caminhao_rect = imagem_caminhao.get_rect(center=(x_caminhao, y_caminhao))
     tela.blit(imagem_caminhao, caminhao_rect) # Show truck

@@ -12,7 +12,7 @@ CINZA = (168, 168, 168)
 
 pygame.init()
 
-tempo_inicial = (time.time()) # Start timer
+
 
 valor_input = easygui.enterbox("Insira a carga máxima do caminhão:", title="Entrada")
 try:
@@ -33,6 +33,7 @@ def calculate_fuel_consumption(distancia, num_produtos):
 
 # Calculate the truck's route
 def calculate_route(lojas, carga_caminhao):
+    
     rota = []
     gastoTotal = 0
     carga = 0
@@ -56,7 +57,7 @@ def calculate_route(lojas, carga_caminhao):
         gastoTotal += gasto_combustivel
         carga += len(loja["destination_stores"]) # Update truck load with number of current store destinations
 
-        #Truck load exeeded capacity, returns to strating point
+        # Truck load exceeded the maximum capacity, so the route is invalid
         if carga >= carga_caminhao:
             break
         
@@ -64,7 +65,8 @@ def calculate_route(lojas, carga_caminhao):
         rota.append({'loja': loja, 'carga_atual': carga})
         # Update current store to next
         loja_atual = loja
-
+    rota += [{'loja': lojas[0], 'carga_atual': carga}]
+    gastoTotal += calculate_fuel_consumption(calculate_distance(loja_atual['x'], loja_atual['y'], lojas[0]['x'], lojas[0]['y']), carga)
     return rota, gastoTotal, carga
 
 # Read store infos from file
@@ -82,6 +84,7 @@ with open("d:\\PAA\\trab2\\caxeiro2\\caxeiro-viajante-paa\\app\\src\\lojas.txt",
 
 
 # Generate all permutations of destinations
+tempo_inicial = (time.time()) # Start timer
 destinos = lojas[1:]  # Exclui a matriz
 permutacoes = list(itertools.permutations(destinos))
 
@@ -98,15 +101,18 @@ for permutacao in permutacoes:
         melhor_gasto_combustivel = gasto_total
 
 # Print results
+gasto = 0
 print("Rota do caminhão:")
-for ponto in melhor_rota:
-    rota = ponto['loja']
-    print(rota["number"], rota['x'], rota['y'], ponto['carga_atual'])
+for i in range(1, len(melhor_rota)):
+    gasto += calculate_fuel_consumption(calculate_distance(melhor_rota[i-1]['loja']['x'], melhor_rota[i-1]['loja']['y'], 
+                                                           melhor_rota[i]['loja']['x'], melhor_rota[i]['loja']['y']), melhor_rota[i-1]['carga_atual'])
+    #rota = ponto['loja']
+    print(f"{melhor_rota[i]['loja']['number']} {gasto:.2f}")
 
-print("Melhor gasto de combustível:", gasto_total)
+print("Melhor gasto de combustível:", gasto)
+
 
 tempo_final = (time.time()) # End timer
-
 print(f"{tempo_final - tempo_inicial} segundos") # Print executing time
 
 ####### FRONT-END #######
