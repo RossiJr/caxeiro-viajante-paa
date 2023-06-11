@@ -2,6 +2,7 @@ import math
 import pygame
 import time
 
+# Colors
 BRANCO = (255, 255, 255)
 VERDE = (0, 255, 0)
 AZUL = (0, 127, 255)
@@ -44,16 +45,9 @@ def calculate_lower_bound(lojas, carga_atual, cargas_restantes):
             #lower_bound = gasto
         lower_bound += gasto
     return lower_bound
-    for loja in cargas_restantes:
-        distancia = calculate_distance(lojas[loja]["x"],lojas[loja]["y"],lojas[0]["x"],lojas[0]["y"])
-        gasto_combustivel = calculate_fuel_consumption(
-            distancia, carga_atual
-        )
-        lower_bound += gasto_combustivel
-    return lower_bound
 
 
-# Calculate the truck's route using Branch and Bound
+# Branch and Bound algorithm
 def calculate_route_bb(lojas, carga_caminhao):
     num_lojas = len(lojas)
     visited = [False] * num_lojas
@@ -61,17 +55,20 @@ def calculate_route_bb(lojas, carga_caminhao):
     melhor_gasto_combustivel = math.inf
     visited[0] = True
 
+    # Calculate the truck's route using Branch and Bound
     def branch_and_bound(index, rota_atual, gasto_atual, carga_atual, cargas_restantes):
         nonlocal melhor_rota, melhor_gasto_combustivel
 
+        # Mark the current store as visited
         visited[index] = True
 
-        # Se a carga atual for maior que a do caminhao
+        # If the truck load is greater than the truck capacity, the store is not visited
         if carga_atual > carga_caminhao:
             visited[index] = False
             carga_atual -= len(lojas[index]["destination_stores"])
             return
 
+        # If the actual route is complete, check if it is the best route
         if len(rota_atual) == num_lojas:
             if gasto_atual < melhor_gasto_combustivel and len(cargas_restantes) == 0:
                 melhor_rota = rota_atual[:]
@@ -80,15 +77,18 @@ def calculate_route_bb(lojas, carga_caminhao):
             lower_bound = calculate_lower_bound(lojas, carga_atual, cargas_restantes)
 
             if lower_bound < melhor_gasto_combustivel:
-                # Ordenar as lojas não visitadas com base na carga de destino
+
+                # Populate the list of unvisited stores
                 lojas_nao_visitadas = []
                 for i in range(1, num_lojas):
                     if not visited[i] and is_in_destination_stores(lojas, i, cargas_restantes):
                         lojas_nao_visitadas.append(lojas[i])
-                #lojas_nao_visitadas.sort(key=lambda x: len(x["destination_stores"]), reverse=True)
 
+                # Calculate the distance between the current store to the other unvisited stores and choose the best one
                 for loja in lojas_nao_visitadas:
                     removed = False
+
+                    # Visit the store and make the calculations and the recursive call
                     nova_distancia = calculate_distance(
                         lojas[rota_atual[len(rota_atual)-1]["index_loja"]]["x"],
                         lojas[rota_atual[len(rota_atual)-1]["index_loja"]]["y"],
@@ -116,6 +116,7 @@ def calculate_route_bb(lojas, carga_caminhao):
                         cargas_restantes,
                     )
 
+                    # Do the traceback if the store is not going to be visited at this moment
                     carga_atual -= len(loja["destination_stores"])
                     for i in loja["destination_stores"]:
                         cargas_restantes.remove(i)
@@ -127,6 +128,7 @@ def calculate_route_bb(lojas, carga_caminhao):
         visited[index] = False
         carga_atual -= len(lojas[index]["destination_stores"])
 
+    # First call of the recursive function, starting visiting the first store
     branch_and_bound(0, [{"index_loja": 0, "carga": 0, "gasto": 0}], 0, 0, [])
 
     return melhor_rota, melhor_gasto_combustivel
