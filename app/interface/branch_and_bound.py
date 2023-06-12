@@ -149,7 +149,7 @@ def calculate_route_bb(lojas, carga_caminhao):
 
 # Read store infos from file
 lojas = []
-with open("d:\\PAA\\trab2\\caxeiro2\\caxeiro-viajante-paa\\app\\src\\lojas.txt", "r") as file:
+with open(".\\lojas.txt", "r") as file:
     for line in file:
         store_info = line.split()
         loja = {
@@ -183,7 +183,7 @@ tela = pygame.display.set_mode((largura, altura))
 pygame.display.set_caption("Branch and Bound")
 
 # Load truck image
-imagem_caminhao = pygame.image.load("d:\\PAA\\trab2\\caxeiro2\\caxeiro-viajante-paa\\app\\src\\caminhao.png")
+imagem_caminhao = pygame.image.load(".\\caminhao.png")
 largura_caminhao = int(5 * tela.get_width() / 100)
 altura_caminhao = int(5 * tela.get_height() / 100)
 imagem_caminhao = pygame.transform.scale(imagem_caminhao, (largura_caminhao, altura_caminhao))
@@ -208,15 +208,15 @@ while executing:
         x = lojas[ponto["index_loja"]]['x'] * size
         y = lojas[ponto["index_loja"]]['y'] * size
         
-        if i < len(melhor_rota) - 1: # and melhor_rota[i-1]['carga_atual'] == melhor_rota[i]['carga_atual']:
+        if i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga'] == melhor_rota[i]['carga']:
             cor = VERDE
             pygame.draw.circle(tela, cor, (x, y), 10)
-        #elif i < len(melhor_rota) - 1# and melhor_rota[i-1]['carga_atual'] < melhor_rota[i]['carga_atual']:
-            #cor = AZUL
-            #pygame.draw.circle(tela, cor, (x, y), 10)
-        #elif i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga_atual'] > melhor_rota[i]['carga_atual']:
-            #cor = VERMELHO
-           # pygame.draw.circle(tela, cor, (x, y), 10)
+        elif i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga'] < melhor_rota[i]['carga']:
+            cor = AZUL
+            pygame.draw.circle(tela, cor, (x, y), 10)
+        elif i < len(melhor_rota) - 1 and melhor_rota[i-1]['carga'] > melhor_rota[i]['carga']:
+            cor = VERMELHO
+            pygame.draw.circle(tela, cor, (x, y), 10)
 
         texto = f"Loja {ponto['index_loja']}"  # Print store number/name
         fonte = pygame.font.Font(None, 18)

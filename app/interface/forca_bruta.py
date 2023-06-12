@@ -71,7 +71,7 @@ def calculate_route(lojas, carga_caminhao):
 
 # Read store infos from file
 lojas = []
-with open("d:\\PAA\\trab2\\caxeiro2\\caxeiro-viajante-paa\\app\\src\\lojas.txt", "r") as file:
+with open(".\\lojas.txt", "r") as file:
     for line in file:
         store_info = line.split()
         loja = {
@@ -123,7 +123,7 @@ tela = pygame.display.set_mode((largura, altura))
 pygame.display.set_caption("Força Bruta")
 
 # Load truck image
-imagem_caminhao = pygame.image.load("d:\\PAA\\trab2\\caxeiro2\\caxeiro-viajante-paa\\app\\src\\caminhao.png")
+imagem_caminhao = pygame.image.load(".\\caminhao.png")
 largura_caminhao = int(5 * tela.get_width() / 100)
 altura_caminhao = int(5 * tela.get_height() / 100)
 imagem_caminhao = pygame.transform.scale(imagem_caminhao, (largura_caminhao, altura_caminhao))

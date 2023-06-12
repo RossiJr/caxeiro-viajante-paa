@@ -1,5 +1,4 @@
 import pygame
-
 #COLORS SET
 BRANCO = (255, 255, 255)
 CINZA = (200, 200, 200)
@@ -30,7 +29,7 @@ while rodando:
                 import forca_bruta
             elif posicao_botao2[0] <= posicao_mouse[0] <= posicao_botao2[0] + largura_botao \
                     and posicao_botao2[1] <= posicao_mouse[1] <= posicao_botao2[1] + altura_botao:
-                import branch_and_bound_interface
+                import branch_and_bound
 
     tela.fill(BRANCO)
     pygame.draw.rect(tela, CINZA, (posicao_botao1[0], posicao_botao1[1], largura_botao, altura_botao))
