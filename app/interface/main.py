@@ -1,3 +1,10 @@
+### Integrantes do grupo:
+###  - Joana Moreira Rezende Woldaynsky
+###  - José Fernando Rossi Junior
+###  - Thayris Gabriela Ferreira Rodrigues
+
+
+
 import pygame
 #COLORS SET
 BRANCO = (255, 255, 255)

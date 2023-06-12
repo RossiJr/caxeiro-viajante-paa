@@ -1,3 +1,10 @@
+### Integrantes do grupo:
+###  - Joana Moreira Rezende Woldaynsky
+###  - José Fernando Rossi Junior
+###  - Thayris Gabriela Ferreira Rodrigues
+
+
+
 import math
 import pygame
 import time
